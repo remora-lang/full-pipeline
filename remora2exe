@@ -17,3 +17,16 @@ EXE_FILE=${REMORA_FILE/.remora/}
 
 remora futhark < "$REMORA_FILE" > "$FUTHARK_FILE"
 mlir-backend "$FUTHARK_FILE" > "$MLIR_FILE"
+
+mlir-opt "$MLIR_FILE" \
+  -one-shot-bufferize="bufferize-function-boundaries" \
+  -buffer-deallocation-pipeline \
+  -convert-scf-to-cf \
+  -convert-cf-to-llvm \
+  -finalize-memref-to-llvm \
+  -convert-arith-to-llvm \
+  -convert-func-to-llvm="use-bare-ptr-memref-call-conv=0" \
+  -reconcile-unrealized-casts \
+  -o "$MLIR_FILE"
+
+mlir-translate --mlir-to-llvmir "$MLIR_FILE" -o "$LLVM_FILE"

@@ -20,7 +20,11 @@ components available on your `$PATH` by standing in the repository and running:
 $ nix shell
 ```
 
-Then run the following to compile a Remora program `foo.remora` to `foo.mlir`.
+Then run the following to compile a Remora program `foo.remora` to `foo.mlir`:
+
+```shell
+$ ./remora2exe foo.remora
+```
 
 TODO: I cannot figure out how to get from the MLIR to LLVM code and then an
 executable.

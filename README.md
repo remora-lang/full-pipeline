@@ -26,8 +26,8 @@ Then run the following to compile a Remora program `foo.remora` to `foo.mlir`:
 $ ./remora2exe foo.remora
 ```
 
-TODO: I cannot figure out how to get from the MLIR to LLVM code and then an
-executable.
+*Assuming* there is a scaffolding C program `foo_scaffold.c`, this produces a
+(CPU) program `foo` that you can run.
 
 ## Example programs
 

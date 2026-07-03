@@ -10,13 +10,21 @@ if [ $# -ne 1 ]; then
 fi
 
 REMORA_FILE=$1
-FUTHARK_FILE=${REMORA_FILE/.remora/.fut_soacs}
+FUT_FILE=${REMORA_FILE/.remora/.fut_soacs}
+FUT_OPT_FILE=${REMORA_FILE/.remora/_opt.fut_soacs}
 MLIR_FILE=${REMORA_FILE/.remora/.mlir}
+MLIR_OPT_FILE=${REMORA_FILE/.remora/_opt.mlir}
 LLVM_FILE=${REMORA_FILE/.remora/.ll}
+SCAFFOLD_FILE=${REMORA_FILE/.remora/_scaffold.c}
 EXE_FILE=${REMORA_FILE/.remora/}
 
-remora futhark < "$REMORA_FILE" > "$FUTHARK_FILE"
-mlir-backend "$FUTHARK_FILE" > "$MLIR_FILE"
+remora futhark < "$REMORA_FILE" > "$FUT_FILE"
+
+# For tedious reasons we cannot actually run the optimiser right now.
+cp "$FUT_FILE" "$FUT_OPT_FILE"
+#futhark dev -s "$FUT_FILE" > "$FUT_OPT_FILE"
+
+mlir-backend "$FUT_OPT_FILE" > "$MLIR_FILE"
 
 mlir-opt "$MLIR_FILE" \
   -one-shot-bufferize="bufferize-function-boundaries" \
@@ -27,6 +35,8 @@ mlir-opt "$MLIR_FILE" \
   -convert-arith-to-llvm \
   -convert-func-to-llvm="use-bare-ptr-memref-call-conv=0" \
   -reconcile-unrealized-casts \
-  -o "$MLIR_FILE"
+  -o "$MLIR_OPT_FILE"
 
-mlir-translate --mlir-to-llvmir "$MLIR_FILE" -o "$LLVM_FILE"
+mlir-translate --mlir-to-llvmir "$MLIR_OPT_FILE" -o "$LLVM_FILE"
+
+clang "$LLVM_FILE" "$SCAFFOLD_FILE" -Wall -Wextra -o "$EXE_FILE"

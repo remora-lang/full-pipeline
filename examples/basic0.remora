@@ -1,8 +1,8 @@
 ;; expected: [3 6]
 ; add two arrays
-((fn ((x (A Int (dims 2))) (y (A Int (dims 2))))
+((fn ((x (A Int (dims 3))) (y (A Int (dims 3))))
     (+ x y)
     )
- [1 2]
- [2 4]
+ [1 2 3]
+ [2 4 5]
  )

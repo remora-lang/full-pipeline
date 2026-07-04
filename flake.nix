@@ -33,6 +33,8 @@
               mlir-backend.packages.${system}.default
               futhark.packages.${system}.default
               pkgs.llvmPackages_22.mlir
+              pkgs.llvmPackages_22.llvm
+              pkgs.llvmPackages_22.clang
             ];
           };
         });

@@ -19,8 +19,4 @@ jobs:
       run: nix build
 
     - name: Run tests
-      uses: workflow/nix-shell-action@v1
-      with:
-        flakes: .#default
-        script: |
-             ./remora2exe examples/basic0.remora
+      run: nix shell --command ./remora2exe examples/basic0.remora

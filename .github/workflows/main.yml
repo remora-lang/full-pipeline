@@ -1,0 +1,22 @@
+name: CI
+
+on:
+  pull_request:
+
+  push:
+    branches: [ main ]
+jobs:
+  build-linux-nix:
+    runs-on: ubuntu-24.04
+
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: Install Nix
+      uses: cachix/install-nix-action@v27
+
+    - name: Build everything
+      run: nix build
+
+    - name: Run tests
+      run: nix shell --command ./remora2exe examples/basic0.remora

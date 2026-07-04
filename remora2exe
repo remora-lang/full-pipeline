@@ -20,9 +20,7 @@ EXE_FILE=${REMORA_FILE/.remora/}
 
 remora futhark < "$REMORA_FILE" > "$FUT_FILE"
 
-# For tedious reasons we cannot actually run the optimiser right now.
-cp "$FUT_FILE" "$FUT_OPT_FILE"
-#futhark dev -s "$FUT_FILE" > "$FUT_OPT_FILE"
+futhark dev -s "$FUT_FILE" > "$FUT_OPT_FILE"
 
 mlir-backend "$FUT_OPT_FILE" > "$MLIR_FILE"
 

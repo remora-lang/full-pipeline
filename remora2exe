@@ -3,7 +3,7 @@
 # Proof of concept of the full pipeline. The existence of this script does not
 # imply that shell script is a good language for writing compiler drivers.
 
-set -ex
+set -e
 
 if [ $# -ne 1 ]; then
     exit "Usage: $0 FILE"

@@ -25,8 +25,8 @@
       packages = forAllSystems (system:
         let
           pkgs = import nixpkgs { inherit system; };
-        in {
-          default = pkgs.buildEnv {
+
+          toolchain = pkgs.buildEnv {
             name = "remora-toolchain";
             paths = [
               remora.packages.${system}.default
@@ -36,6 +36,37 @@
               pkgs.llvmPackages_22.llvm
               pkgs.llvmPackages_22.clang
             ];
+          };
+        in {
+          default = toolchain;
+        } // nixpkgs.lib.optionalAttrs pkgs.stdenv.isLinux {
+          docker = pkgs.dockerTools.buildLayeredImage {
+            name = "remora-toolchain";
+            tag = "latest";
+            contents = [
+              toolchain
+              pkgs.bashInteractive
+              pkgs.coreutils
+              pkgs.which
+              pkgs.gnugrep
+              pkgs.gnused
+              pkgs.findutils
+              pkgs.dockerTools.caCertificates
+              pkgs.dockerTools.fakeNss
+              pkgs.dockerTools.usrBinEnv
+            ];
+            extraCommands = ''
+              mkdir -p tmp
+              chmod 1777 tmp
+            '';
+            config = {
+              Env = [
+                "PATH=/bin"
+                "HOME=/root"
+              ];
+              WorkingDir = "/root";
+              Cmd = [ "${pkgs.bashInteractive}/bin/bash" ];
+            };
           };
         });
     };

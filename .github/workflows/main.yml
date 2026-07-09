@@ -20,3 +20,21 @@ jobs:
 
     - name: Run tests
       run: nix shell --command ./test.sh
+
+  build-docker:
+    runs-on: ubuntu-24.04
+
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: Install Nix
+      uses: cachix/install-nix-action@v27
+
+    - name: Build Docker image
+      run: nix build .#docker
+
+    - name: Load Docker image
+      run: docker load < result
+
+    - name: Run tests in Docker image
+      run: docker run --rm -v "$PWD":/workspace -w /workspace remora-toolchain:latest ./test.sh

@@ -12,6 +12,9 @@ jobs:
     steps:
     - uses: actions/checkout@v7
 
+    - name: Increase disk space
+      uses: ./.github/actions/space
+
     - name: Install Nix
       uses: cachix/install-nix-action@v27
 
@@ -30,6 +33,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v7
+
+    - name: Increase disk space
+      uses: ./.github/actions/space
 
     - name: Install Nix
       uses: cachix/install-nix-action@v27

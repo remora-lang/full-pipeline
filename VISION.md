@@ -25,12 +25,45 @@ The overall pipeline will look as follows:
    * A program in some other language that contains the MIMD parallelism, and
      contains calls to the Futhark program.
 
-   In the short term, this second program is empty, meaning we only handle
+   In the short term, this second program is empty, meaning we only handle SIMD
    Remora programs that can be compiled entirely to Futhark. In the longer term,
    it doesn't matter particularly what language this second program is in, as we
    do not foresee compiling it in any particular way; e.g. making it a Scheme
    program with some reasonably flexible scheduler for task parallelism (and
    ability to call C code over an FFI) would perhaps be useful.
+
+   Internally, this stage proceeds roughly as:
+
+   ```
+      typechecking
+   -> monomorphization
+   -> defunctionaliztion
+   -> SIMD/MIMD analysis
+   -> SIMD leaf transformation
+   -> Futhark code generation
+   ```
+
+   A few of these components (or, at least, parts of them) remain open research
+   problems:
+
+   * Monomorphization. Instrumenting monomorphization to maximally specialize
+     shapes (useful to compile to specialized kernels for, e.g., matrix
+     multiplication of matrices of a known size) may involve doing a rank
+     analysis over shapes and---where the rank is statically
+     determinable---decomposing it into dimension variables to further
+     specialize.
+
+   * SIMD/MIMD analysis. Labels nodes of an AST as SIMD or MIMD
+     computations. This work is in-progress on a separate
+     [toyimplementation](https://github.com/remora-lang/SIMD-MIMD), which is done on
+     a CPS Remora IR. Open questions remain on whether we'll adapt a similar IR
+     for the compiler proper and also how to adapt the work for the richer
+     Remora language compared to the more constrained language in the toy
+     implementation.
+
+   * SIMD leaf transformation. Given an AST with nodes labeled as SIMD or MIMD
+     from the analysis detailed above, how can we transform it to push all SIMD
+     nodes into the leaves to get the tree structure described above?
 
 2. [The Futhark compiler](https://github.com/diku-dk/futhark) will perform
    various optimisations and compile the Futhark SOACS IR to the *GPU* IR. The

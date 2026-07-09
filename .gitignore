@@ -1,3 +1,4 @@
 examples/*
 !examples/*.remora
 !examples/*.c
+result

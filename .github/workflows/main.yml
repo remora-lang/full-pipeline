@@ -24,6 +24,10 @@ jobs:
   build-docker:
     runs-on: ubuntu-24.04
 
+    permissions:
+      contents: read
+      packages: write
+
     steps:
     - uses: actions/checkout@v7
 
@@ -38,3 +42,19 @@ jobs:
 
     - name: Run tests in Docker image
       run: docker run --rm -v "$PWD":/workspace -w /workspace remora-toolchain:latest ./test.sh
+
+    - name: Log in to GitHub Container Registry
+      if: github.event_name == 'push'
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Push Docker image
+      if: github.event_name == 'push'
+      run: |
+        image="ghcr.io/${{ github.repository_owner }}/remora-toolchain"
+        image=$(echo "$image" | tr '[:upper:]' '[:lower:]')
+        docker tag remora-toolchain:latest "$image:latest"
+        docker push "$image:latest"

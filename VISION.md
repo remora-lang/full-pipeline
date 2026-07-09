@@ -55,7 +55,7 @@ The overall pipeline will look as follows:
 
    * SIMD/MIMD analysis. Labels nodes of an AST as SIMD or MIMD
      computations. This work is in-progress on a separate
-     [toyimplementation](https://github.com/remora-lang/SIMD-MIMD), which is done on
+     [toy implementation](https://github.com/remora-lang/SIMD-MIMD), which is done on
      a CPS Remora IR. Open questions remain on whether we'll adapt a similar IR
      for the compiler proper and also how to adapt the work for the richer
      Remora language compared to the more constrained language in the toy

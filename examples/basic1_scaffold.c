@@ -1,11 +1,12 @@
 // driver.c
-#include <stdio.h>
+#include <inttypes.h>
 #include <stdint.h>
+#include <stdio.h>
 
-extern int32_t entry_main(void);
+extern int64_t _mlir_ciface_entry_main(void);
 
 int main(void) {
-  int32_t result = entry_main();
-  printf("%d\n", (int)result);
+  int64_t result = _mlir_ciface_entry_main();
+  printf("%" PRId64 "\n", result);
   return 0;
 }

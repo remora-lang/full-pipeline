@@ -11,7 +11,7 @@ fi
 
 REMORA_FILE=$1
 FUT_FILE=${REMORA_FILE/.remora/.fut_soacs}
-FUT_OPT_FILE=${REMORA_FILE/.remora/_opt.fut_soacs}
+FUT_OPT_FILE=${REMORA_FILE/.remora/_opt.fut_gpu}
 MLIR_FILE=${REMORA_FILE/.remora/.mlir}
 MLIR_OPT_FILE=${REMORA_FILE/.remora/_opt.mlir}
 LLVM_FILE=${REMORA_FILE/.remora/.ll}
@@ -20,16 +20,25 @@ EXE_FILE=${REMORA_FILE/.remora/}
 
 remora futhark < "$REMORA_FILE" > "$FUT_FILE"
 
-futhark dev -s "$FUT_FILE" > "$FUT_OPT_FILE"
+futhark dev -s --gpu --no-grid -e "$FUT_FILE" > "$FUT_OPT_FILE"
 
 mlir-backend "$FUT_OPT_FILE" > "$MLIR_FILE"
 
+# Lower to LLVM dialect, targeting the CPU. The order matters: we must get rid
+# of tensors (bufferize) before linalg can become loops, and of all structured
+# control flow before converting to the LLVM dialect.
 mlir-opt "$MLIR_FILE" \
   -one-shot-bufferize="bufferize-function-boundaries" \
   -buffer-deallocation-pipeline \
+  -convert-linalg-to-loops \
+  -expand-strided-metadata \
+  -lower-affine \
   -convert-scf-to-cf \
-  -convert-cf-to-llvm \
+  -llvm-request-c-wrappers \
   -finalize-memref-to-llvm \
+  -convert-cf-to-llvm \
+  -convert-index-to-llvm \
+  -convert-math-to-llvm \
   -convert-arith-to-llvm \
   -convert-func-to-llvm="use-bare-ptr-memref-call-conv=0" \
   -reconcile-unrealized-casts \

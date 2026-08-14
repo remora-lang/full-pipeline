@@ -39,7 +39,7 @@
           };
         in {
           default = toolchain;
-        } // nixpkgs.lib.optionalAttrs pkgs.stdenv.isLinux {
+        } // nixpkgs.lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
           docker = pkgs.dockerTools.buildLayeredImage {
             name = "remora-toolchain";
             tag = "latest";

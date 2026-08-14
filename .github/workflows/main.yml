@@ -38,7 +38,7 @@ jobs:
       uses: ./.github/actions/space
 
     - name: Install Nix
-      uses: cachix/install-nix-action@v27
+      uses: cachix/install-nix-action@v31
 
     - name: Build Docker image
       run: nix build .#docker

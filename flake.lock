@@ -41,7 +41,6 @@
       "flake": false,
       "locked": {
         "lastModified": 1786121953,
-        "narHash": "sha256-Is/6bewx3XftudGfSvsCWRkQYug+/IEYBOXR5TmRMaY=",
         "ref": "refs/heads/main",
         "rev": "3699452d60c6dfe483df4675c7e98299fe790ec4",
         "revCount": 20359,
@@ -63,7 +62,6 @@
       },
       "locked": {
         "lastModified": 1786709186,
-        "narHash": "sha256-cDafjqaQoPv8KITHo3smL/xgCd/tZedxF506B18Xav4=",
         "owner": "remora-lang",
         "repo": "mlir-backend",
         "rev": "2c43797a260c32b91458f52b4751f550de8c4d9b",
@@ -78,7 +76,6 @@
     "nixpkgs": {
       "locked": {
         "lastModified": 1777578337,
-        "narHash": "sha256-Ad49moKWeXtKBJNy2ebiTQUEgdLyvGmTeykAQ9xM+Z4=",
         "owner": "NixOS",
         "repo": "nixpkgs",
         "rev": "15f4ee454b1dce334612fa6843b3e05cf546efab",
@@ -94,7 +91,6 @@
     "nixpkgs_2": {
       "locked": {
         "lastModified": 1782723713,
-        "narHash": "sha256-oPXCU/SSUokcGaJREHibG1CBX3+s/W7orDWQOZDsEeQ=",
         "owner": "NixOS",
         "repo": "nixpkgs",
         "rev": "b5aa0fbd538984f6e3d201be0005b4463d8b09f8",
@@ -110,7 +106,6 @@
     "nixpkgs_3": {
       "locked": {
         "lastModified": 1786599213,
-        "narHash": "sha256-yNJd40f11EzXBjSByCB7IPpeFFAdeoSKKM67dGkfFoU=",
         "owner": "NixOS",
         "repo": "nixpkgs",
         "rev": "0e251e24a4f24e036a084b6b4b2d2491af4167f4",
@@ -126,7 +121,6 @@
     "nixpkgs_4": {
       "locked": {
         "lastModified": 1786534138,
-        "narHash": "sha256-fBJMdnKUTUDtfi/BYLr71HLaC9dG382arxLF2Egg2uo=",
         "owner": "nixos",
         "repo": "nixpkgs",
         "rev": "044bfe75bfe4c7bbe043dc17b5e42ea823b84a09",
@@ -146,7 +140,6 @@
       },
       "locked": {
         "lastModified": 1786706481,
-        "narHash": "sha256-Xsn9GMmfIY0LXh8jgwLZR0XqwD+b330rcEZWXQ8NaMU=",
         "owner": "remora-lang",
         "repo": "remora",
         "rev": "36ce816bc5461e226664e421bf6b7f7b43444a52",

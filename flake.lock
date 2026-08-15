@@ -139,10 +139,11 @@
         "nixpkgs": "nixpkgs_4"
       },
       "locked": {
-        "lastModified": 1786706481,
+        "lastModified": 1786776681,
+        "narHash": "sha256-wGGSt/aMKG8//qhdt9jOOgkNq1lmFREpFL8GIWf78Qs=",
         "owner": "remora-lang",
         "repo": "remora",
-        "rev": "36ce816bc5461e226664e421bf6b7f7b43444a52",
+        "rev": "fb4e440d46f24c0f1cbef9e3497021eb86895ddc",
         "type": "github"
       },
       "original": {

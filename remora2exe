@@ -20,7 +20,10 @@ EXE_FILE=${REMORA_FILE/.remora/}
 
 remora futhark < "$REMORA_FILE" > "$FUT_FILE"
 
-futhark dev -s --flatten=no_intra --no-grid -e "$FUT_FILE" > "$FUT_OPT_FILE"
+FUTHARK=futhark
+# FUTHARK=~/Projects/mocha/futhark/dist-newstyle/build/x86_64-linux/ghc-9.10.3/futhark-0.28.0/x/futhark/build/futhark/futhark
+
+${FUTHARK} dev -s --flatten=no_intra --no-grid -e "$FUT_FILE" > "$FUT_OPT_FILE"
 
 mlir-backend "$FUT_OPT_FILE" > "$MLIR_FILE"
 

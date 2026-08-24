@@ -62,11 +62,11 @@
         "nixpkgs": "nixpkgs_2"
       },
       "locked": {
-        "lastModified": 1787587796,
-        "narHash": "sha256-UbZ51WHd4QfvnEkBM0xVINTYi/Qf5R44/8Xjg3bAark=",
+        "lastModified": 1787598743,
+        "narHash": "sha256-9ju7j8JRJCOc0bIcZPW38cft3Bi6AI6wwqxvpgIwgD0=",
         "owner": "remora-lang",
         "repo": "mlir-backend",
-        "rev": "3808a33efc1887bf9a7f0e1e90cd698dd4a87e00",
+        "rev": "bbbf04adbbb407a0e203af6a23b1a1f852ddb4e0",
         "type": "github"
       },
       "original": {
@@ -143,10 +143,11 @@
         "nixpkgs": "nixpkgs_4"
       },
       "locked": {
-        "lastModified": 1787347557,
+        "lastModified": 1787597841,
+        "narHash": "sha256-qmWkF3INpw5IYS5DEIqtmOAkneeUKYp7+64P7BWfX+Q=",
         "owner": "remora-lang",
         "repo": "remora",
-        "rev": "40e0913408855227b702c36a9a9b5d1025a16ac0",
+        "rev": "abc48ff4dbff38a79b7292363097c6099ee98c6d",
         "type": "github"
       },
       "original": {

@@ -1,0 +1,3 @@
+(entry (inc2 (in [Int 1024]) : [Int 1024])
+  (+ in 2))
+

@@ -11,7 +11,7 @@ fi
 
 REMORA_FILE=$1
 FUT_FILE=${REMORA_FILE/.remora/.fut_soacs}
-FUT_OPT_FILE=${REMORA_FILE/.remora/_opt.fut_gpu}
+FUT_OPT_FILE=${REMORA_FILE/.remora/.fut_gpu}
 MLIR_FILE=${REMORA_FILE/.remora/.mlir}
 MLIR_OPT_FILE=${REMORA_FILE/.remora/_opt.mlir}
 LLVM_FILE=${REMORA_FILE/.remora/.ll}

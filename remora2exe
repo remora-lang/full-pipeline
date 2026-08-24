@@ -20,30 +20,43 @@ EXE_FILE=${REMORA_FILE/.remora/}
 
 remora futhark < "$REMORA_FILE" > "$FUT_FILE"
 
-futhark dev -s --gpu --no-grid -e "$FUT_FILE" > "$FUT_OPT_FILE"
+futhark dev -s --flatten=no_intra --no-grid -e "$FUT_FILE" > "$FUT_OPT_FILE"
 
 mlir-backend "$FUT_OPT_FILE" > "$MLIR_FILE"
 
 # Lower to LLVM dialect, targeting the CPU. The order matters: we must get rid
 # of tensors (bufferize) before linalg can become loops, and of all structured
-# control flow before converting to the LLVM dialect.
+# control flow before converting to the LLVM dialect. --llvm-request-c-wrappers
+# gives us the _mlir_ciface_* entry points that the scaffolding calls; the raw
+# ones pass and return memref descriptors in a way that is not the C ABI.
+#
+# --buffer-deallocation-pipeline puts every dealloc at the end of the block that
+# owns the buffer, which for straight-line code means nothing is freed until the
+# whole program has run. --optimize-allocation-liveness moves each one just past
+# its last use.
 mlir-opt "$MLIR_FILE" \
-  -one-shot-bufferize="bufferize-function-boundaries" \
-  -buffer-deallocation-pipeline \
-  -convert-linalg-to-loops \
-  -expand-strided-metadata \
-  -lower-affine \
-  -convert-scf-to-cf \
-  -llvm-request-c-wrappers \
-  -finalize-memref-to-llvm \
-  -convert-cf-to-llvm \
-  -convert-index-to-llvm \
-  -convert-math-to-llvm \
-  -convert-arith-to-llvm \
-  -convert-func-to-llvm="use-bare-ptr-memref-call-conv=0" \
-  -reconcile-unrealized-casts \
+  --one-shot-bufferize="bufferize-function-boundaries function-boundary-type-conversion=identity-layout-map allow-return-allocs-from-loops" \
+  --buffer-deallocation-pipeline \
+  --optimize-allocation-liveness \
+  --convert-linalg-to-loops \
+  --convert-scf-to-cf \
+  --expand-strided-metadata \
+  --lower-affine \
+  --llvm-request-c-wrappers \
+  --convert-math-to-llvm \
+  --finalize-memref-to-llvm \
+  --convert-func-to-llvm \
+  --convert-arith-to-llvm \
+  --convert-cf-to-llvm \
+  --reconcile-unrealized-casts \
   -o "$MLIR_OPT_FILE"
 
 mlir-translate --mlir-to-llvmir "$MLIR_OPT_FILE" -o "$LLVM_FILE"
 
-clang "$LLVM_FILE" "$SCAFFOLD_FILE" -Wall -Wextra -o "$EXE_FILE"
+# The generated code calls libm (powf and friends) and MLIR's C runner utilities
+# (memrefCopy), which live next to the toolchain's binaries.
+MLIR_LIB=$(dirname "$(command -v mlir-opt)")/../lib
+
+clang "$LLVM_FILE" "$SCAFFOLD_FILE" -Wall -Wextra \
+  -L"$MLIR_LIB" -Wl,-rpath,"$MLIR_LIB" -lmlir_c_runner_utils -lm \
+  -o "$EXE_FILE"

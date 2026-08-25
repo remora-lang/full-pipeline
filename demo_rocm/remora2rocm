@@ -1,0 +1,118 @@
+#!/usr/bin/env bash
+#
+# Like remora2exe, but targets an AMD GPU. The differences are confined to the
+# middle of the MLIR pass pipeline.
+
+set -e
+
+if [ $# -ne 1 ]; then
+    echo "Usage: $0 FILE" >&2
+    exit 1
+fi
+
+# Resolved before the cd below, so that a path relative to the caller's working
+# directory keeps meaning what they meant.
+REMORA_FILE=$(realpath "$1")
+CHIP=${CHIP:-gfx1100}
+TILE=${TILE:-256}
+
+cd "$(dirname "$0")"
+DEMO_DIR=$PWD
+OUT=$DEMO_DIR/build
+mkdir -p "$OUT"
+
+NAME=$(basename "${REMORA_FILE%.remora}")
+
+TOOLCHAIN=$(dirname "$(command -v mlir-opt)")/..
+MLIR_LIB=$TOOLCHAIN/lib
+
+# MLIR's GPU lowering emits calls to mgpuLaunchKernel and friends.  nixpkgs
+# builds MLIR with MLIR_ENABLE_ROCM_RUNNER=OFF, so this library only exists
+# because ../flake.nix builds it separately, and only in the `rocm` output --
+# the default toolchain deliberately does not drag ROCm in.
+if [ ! -e "$MLIR_LIB/libmlir_rocm_runtime.so" ]; then
+    echo "error: no libmlir_rocm_runtime.so in $MLIR_LIB." >&2
+    echo "       This needs the GPU toolchain rather than the default one:" >&2
+    echo "           nix shell .#rocm" >&2
+    exit 1
+fi
+
+# --gpu-module-to-binary looks for ld.lld under $ROCM_PATH/llvm/bin, and says
+# only 'lld invocation failed' when it is missing. The flake assembles that
+# layout at <toolchain>/rocm.
+export ROCM_PATH=${ROCM_PATH:-$TOOLCHAIN/rocm}
+
+# A program that takes an argument needs scaffolding that allocates its input in
+# GPU-accessible memory, so it gets a _gpu_scaffold.c of its own. A program that
+# takes none has nothing to allocate, and the CPU scaffolding works as-is.
+SCAFFOLD=$DEMO_DIR/${NAME}_gpu_scaffold.c
+if [ ! -e "$SCAFFOLD" ]; then
+    SCAFFOLD=$(dirname "$REMORA_FILE")/${NAME}_scaffold.c
+fi
+if [ ! -e "$SCAFFOLD" ]; then
+    echo "error: no scaffolding found for $REMORA_FILE" >&2
+    exit 1
+fi
+
+# The following is identical to remora2exe.
+remora futhark < "$REMORA_FILE" > "$OUT/$NAME.fut_soacs"
+
+futhark dev -s --flatten=no_intra --no-grid -e "$OUT/$NAME.fut_soacs" \
+    > "$OUT/${NAME}_opt.fut_gpu"
+
+mlir-backend "$OUT/${NAME}_opt.fut_gpu" > "$OUT/$NAME.mlir"
+
+# mlir-backend emits linalg.generic ops already marked iterator_types =
+# ["parallel"], so instead of remora2exe's sequential --convert-linalg-to-loops
+# we take them to parallel loops and map those onto a grid. Tiling first
+# matters: without it --gpu-map-parallel-loops assigns the whole loop to blocks
+# and leaves one thread in each.
+mlir-opt "$OUT/$NAME.mlir" \
+    --one-shot-bufferize="bufferize-function-boundaries function-boundary-type-conversion=identity-layout-map allow-return-allocs-from-loops" \
+    --buffer-deallocation-pipeline \
+    --optimize-allocation-liveness \
+    --convert-linalg-to-parallel-loops \
+    --scf-parallel-loop-tiling="parallel-loop-tile-sizes=$TILE" \
+    --gpu-map-parallel-loops \
+    --convert-parallel-loops-to-gpu \
+    --gpu-kernel-outlining \
+    -o "$OUT/${NAME}_gpu.mlir"
+
+# Compile the outlined kernels to a gfx code object and lower the host half
+# around them. --gpu-to-llvm converts gpu.launch_func's operands to LLVM types
+# but deliberately leaves the op standing; mlir-translate is what turns it into
+# mgpuModuleLoad/mgpuLaunchKernel calls, via the #gpu.select_object offloading
+# handler attached to the gpu.binary. So it is not a pass ordering mistake that
+# gpu.launch_func survives this command.
+#
+# use-generic-functions routes memref.alloc through _mlir_memref_to_llvm_alloc
+# rather than malloc, which mlir_rocm_alloc.c implements with pinned host
+# memory; see that file for why plain malloc is not good enough.
+mlir-opt "$OUT/${NAME}_gpu.mlir" \
+    --rocdl-attach-target="chip=$CHIP" \
+    --convert-scf-to-cf \
+    --expand-strided-metadata \
+    --lower-affine \
+    --convert-gpu-to-rocdl \
+    --reconcile-unrealized-casts \
+    --gpu-module-to-binary \
+    --llvm-request-c-wrappers \
+    --convert-math-to-llvm \
+    --finalize-memref-to-llvm='use-generic-functions=1' \
+    --convert-func-to-llvm \
+    --convert-arith-to-llvm \
+    --convert-cf-to-llvm \
+    --gpu-to-llvm \
+    --reconcile-unrealized-casts \
+    -o "$OUT/${NAME}_opt.mlir"
+
+mlir-translate --mlir-to-llvmir "$OUT/${NAME}_opt.mlir" -o "$OUT/$NAME.ll"
+
+# Beyond ../remora2exe's libraries, linking needs the GPU runtime and, for the
+# allocator hook, HIP itself.
+clang "$OUT/$NAME.ll" "$SCAFFOLD" "$DEMO_DIR/mlir_rocm_alloc.c" -Wall -Wextra \
+    -L"$MLIR_LIB" -Wl,-rpath,"$MLIR_LIB" \
+    -lmlir_rocm_runtime -lmlir_c_runner_utils -lamdhip64 -lm \
+    -o "$OUT/$NAME"
+
+echo "built $OUT/$NAME (kernels for $CHIP, tile $TILE)" >&2

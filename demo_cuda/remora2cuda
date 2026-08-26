@@ -1,0 +1,114 @@
+#!/usr/bin/env bash
+#
+# Like remora2exe, but targets an NVIDIA GPU. The differences are confined to
+# the middle of the MLIR pass pipeline.
+
+set -e
+
+if [ $# -ne 1 ]; then
+    echo "Usage: $0 FILE" >&2
+    exit 1
+fi
+
+# Resolved before the cd below, so relative paths still mean what the caller
+# meant.
+REMORA_FILE=$(realpath "$1")
+CHIP=${CHIP:-sm_75}
+TILE=${TILE:-256}
+
+cd "$(dirname "$0")"
+DEMO_DIR=$PWD
+OUT=$DEMO_DIR/build
+mkdir -p "$OUT"
+
+NAME=$(basename "${REMORA_FILE%.remora}")
+
+TOOLCHAIN=$(dirname "$(command -v mlir-opt)")/..
+MLIR_LIB=$TOOLCHAIN/lib
+
+# MLIR's GPU lowering calls mgpuLaunchKernel and friends.  nixpkgs builds MLIR
+# with MLIR_ENABLE_CUDA_RUNNER=OFF, so this library only exists in the `cuda`
+# output that ../flake.nix builds; the default toolchain leaves CUDA out.
+if [ ! -e "$MLIR_LIB/libmlir_cuda_runtime.so" ]; then
+    echo "error: no libmlir_cuda_runtime.so in $MLIR_LIB." >&2
+    echo "       This needs the GPU toolchain rather than the default one:" >&2
+    echo "           nix shell .#cuda" >&2
+    exit 1
+fi
+
+# --gpu-module-to-binary needs ptxas and fatbinary from $CUDA_ROOT/bin, plus
+# libdevice under $CUDA_ROOT/nvvm whether the kernel uses it or not. The flake
+# assembles that layout at <toolchain>/cuda.
+export CUDA_ROOT=${CUDA_ROOT:-$TOOLCHAIN/cuda}
+
+# A program with an argument needs its input in GPU-accessible memory, so it
+# gets a _gpu_scaffold.c of its own. One without has nothing to allocate, so the
+# CPU scaffolding works as-is.
+SCAFFOLD=$DEMO_DIR/${NAME}_gpu_scaffold.c
+if [ ! -e "$SCAFFOLD" ]; then
+    SCAFFOLD=$(dirname "$REMORA_FILE")/${NAME}_scaffold.c
+fi
+if [ ! -e "$SCAFFOLD" ]; then
+    echo "error: no scaffolding found for $REMORA_FILE" >&2
+    exit 1
+fi
+
+# The following is identical to remora2exe.
+remora futhark < "$REMORA_FILE" > "$OUT/$NAME.fut_soacs"
+
+futhark dev -s --flatten=no_intra --no-grid -e "$OUT/$NAME.fut_soacs" \
+    > "$OUT/${NAME}_opt.fut_gpu"
+
+mlir-backend "$OUT/${NAME}_opt.fut_gpu" > "$OUT/$NAME.mlir"
+
+# mlir-backend already marks its linalg.generic ops iterator_types =
+# ["parallel"], so instead of remora2exe's sequential --convert-linalg-to-loops
+# we go to parallel loops and map those onto a grid. Tile first, or
+# --gpu-map-parallel-loops puts the whole loop in blocks with one thread each.
+mlir-opt "$OUT/$NAME.mlir" \
+    --one-shot-bufferize="bufferize-function-boundaries function-boundary-type-conversion=identity-layout-map allow-return-allocs-from-loops" \
+    --buffer-deallocation-pipeline \
+    --optimize-allocation-liveness \
+    --convert-linalg-to-parallel-loops \
+    --scf-parallel-loop-tiling="parallel-loop-tile-sizes=$TILE" \
+    --gpu-map-parallel-loops \
+    --convert-parallel-loops-to-gpu \
+    --gpu-kernel-outlining \
+    -o "$OUT/${NAME}_gpu.mlir"
+
+# Compile the outlined kernels to a fatbinary and lower the host half around
+# them. --gpu-to-llvm leaves gpu.launch_func standing on purpose, so that is not
+# a pass ordering mistake; mlir-translate is what turns it into
+# mgpuModuleLoad/mgpuLaunchKernel calls.
+#
+# use-generic-functions routes memref.alloc through _mlir_memref_to_llvm_alloc
+# instead of malloc, which mlir_cuda_alloc.c implements with pinned host memory;
+# see that file for why malloc is not good enough.
+mlir-opt "$OUT/${NAME}_gpu.mlir" \
+    --nvvm-attach-target="chip=$CHIP" \
+    --convert-scf-to-cf \
+    --expand-strided-metadata \
+    --lower-affine \
+    --convert-gpu-to-nvvm \
+    --reconcile-unrealized-casts \
+    --gpu-module-to-binary \
+    --llvm-request-c-wrappers \
+    --convert-math-to-llvm \
+    --finalize-memref-to-llvm='use-generic-functions=1' \
+    --convert-func-to-llvm \
+    --convert-arith-to-llvm \
+    --convert-cf-to-llvm \
+    --gpu-to-llvm \
+    --reconcile-unrealized-casts \
+    -o "$OUT/${NAME}_opt.mlir"
+
+mlir-translate --mlir-to-llvmir "$OUT/${NAME}_opt.mlir" -o "$OUT/$NAME.ll"
+
+# On top of ../remora2exe's libraries: the GPU runtime, and cudart for the
+# allocator hook.
+clang "$OUT/$NAME.ll" "$SCAFFOLD" "$DEMO_DIR/mlir_cuda_alloc.c" -Wall -Wextra \
+    -L"$MLIR_LIB" -Wl,-rpath,"$MLIR_LIB" \
+    -lmlir_cuda_runtime -lmlir_c_runner_utils -lcudart -lm \
+    -o "$OUT/$NAME"
+
+echo "built $OUT/$NAME (kernels for $CHIP, tile $TILE)" >&2

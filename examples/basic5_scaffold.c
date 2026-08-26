@@ -1,30 +1,42 @@
-// driver.c
 #include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 
-typedef struct {
-  int64_t *allocated;
-  int64_t *aligned;
-  int64_t offset;
-  int64_t sizes[1];
-  int64_t strides[1];
-} MemRef2xI64;
-
-// The C-compatible entry point emitted by -llvm-request-c-wrappers; the raw
-// entry_main returns the memref struct by value, which is not the C ABI.
-extern void _mlir_ciface_entry_main(MemRef2xI64 *result);
+#include "basic5.h"
 
 int main(void) {
-  MemRef2xI64 result;
-  _mlir_ciface_entry_main(&result);
+  struct remora_context *ctx = remora_context_new();
+  if (ctx == NULL) {
+    fprintf(stderr, "out of memory\n");
+    return 1;
+  }
+
+  struct remora_i64_1d *out = NULL;
+  if (remora_entry_main(ctx, &out) != 0) {
+    fprintf(stderr, "%s\n", remora_context_get_error(ctx));
+    return 1;
+  }
+
+  const int64_t *shape = remora_shape_i64_1d(ctx, out);
+  int64_t *values = malloc(shape[0] * sizeof *values);
+  if (values == NULL) {
+    fprintf(stderr, "out of memory\n");
+    return 1;
+  }
+  remora_values_i64_1d(ctx, out, values);
+
   printf("[");
-  for (int64_t i = 0; i < result.sizes[0]; i++) {
+  for (int64_t i = 0; i < shape[0]; i++) {
     if (i != 0) {
       printf(", ");
     }
-    printf("%" PRId64, result.aligned[i * result.strides[0]]);
+    printf("%" PRId64, values[i]);
   }
   printf("]\n");
+
+  free(values);
+  remora_free_i64_1d(ctx, out);
+  remora_context_free(ctx);
   return 0;
 }

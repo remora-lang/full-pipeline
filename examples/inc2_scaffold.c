@@ -1,48 +1,56 @@
-// driver.c
 #include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
+
+#include "inc2.h"
 
 #define N 1024
 
-typedef struct {
-  int64_t *allocated;
-  int64_t *aligned;
-  int64_t offset;
-  int64_t sizes[1];
-  int64_t strides[1];
-} MemRef1024xI64;
-
-// The C-compatible entry point emitted by -llvm-request-c-wrappers. Unlike the
-// nullary entry points, this one takes an argument: the result descriptor comes
-// first, and every memref argument is passed as a *pointer* to its descriptor.
-extern void _mlir_ciface_entry_inc2(MemRef1024xI64 *result,
-                                    MemRef1024xI64 *in);
-
-static int64_t input[N];
-
 int main(void) {
+  struct remora_context *ctx = remora_context_new();
+  int64_t *input = malloc(N * sizeof *input);
+  if (ctx == NULL || input == NULL) {
+    fprintf(stderr, "out of memory\n");
+    return 1;
+  }
   for (int64_t i = 0; i < N; i++) {
     input[i] = i;
   }
-  MemRef1024xI64 in = {
-      .allocated = input,
-      .aligned = input,
-      .offset = 0,
-      .sizes = {N},
-      .strides = {1},
-  };
 
-  MemRef1024xI64 result;
-  _mlir_ciface_entry_inc2(&result, &in);
+  struct remora_i64_1d *in = remora_new_i64_1d(ctx, input, N);
+  free(input);
+  if (in == NULL) {
+    fprintf(stderr, "%s\n", remora_context_get_error(ctx));
+    return 1;
+  }
+
+  struct remora_i64_1d *out = NULL;
+  if (remora_entry_inc2(ctx, &out, in) != 0) {
+    fprintf(stderr, "%s\n", remora_context_get_error(ctx));
+    return 1;
+  }
+
+  const int64_t *shape = remora_shape_i64_1d(ctx, out);
+  int64_t *values = malloc(shape[0] * sizeof *values);
+  if (values == NULL) {
+    fprintf(stderr, "out of memory\n");
+    return 1;
+  }
+  remora_values_i64_1d(ctx, out, values);
 
   printf("[");
-  for (int64_t i = 0; i < result.sizes[0]; i++) {
+  for (int64_t i = 0; i < shape[0]; i++) {
     if (i != 0) {
       printf(", ");
     }
-    printf("%" PRId64, result.aligned[i * result.strides[0]]);
+    printf("%" PRId64, values[i]);
   }
   printf("]\n");
+
+  free(values);
+  remora_free_i64_1d(ctx, out);
+  remora_free_i64_1d(ctx, in);
+  remora_context_free(ctx);
   return 0;
 }

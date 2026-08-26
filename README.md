@@ -20,14 +20,30 @@ components available on your `$PATH` by standing in the repository and running:
 $ nix shell
 ```
 
-Then run the following to compile a Remora program `foo.remora` to `foo.mlir`:
+Then run the following to compile a Remora program `foo.remora`:
 
 ```shell
 $ ./remora2exe foo.remora
 ```
 
-*Assuming* there is a scaffolding C program `foo_scaffold.c`, this produces a
-(CPU) program `foo` that you can run.
+This produces a (CPU) library `build/libfoo.a` and a generated header
+`build/foo.h`, which you can link into a C program of your own. If there is a
+scaffolding program `foo_scaffold.c` next to `foo.remora`, it is linked against
+the library as well, giving you a `build/foo` you can run.
+
+The header is generated from the compiled entry points, so it names them and
+their shapes without anything being written by hand:
+
+```c
+struct remora_context *ctx = remora_context_new();
+struct remora_i64_1d *out = NULL;
+if (remora_entry_main(ctx, &out) != 0) {
+  fprintf(stderr, "%s\n", remora_context_get_error(ctx));
+}
+```
+
+`../demo_cuda` and `../demo_rocm` produce the same interface for GPU targets,
+so scaffolding can be moved between them unchanged.
 
 ## Example programs
 

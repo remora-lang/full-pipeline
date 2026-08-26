@@ -18,6 +18,7 @@ TILE=${TILE:-256}
 
 cd "$(dirname "$0")"
 DEMO_DIR=$PWD
+ROOT=$(cd "$DEMO_DIR/.." && pwd)
 OUT=$DEMO_DIR/build
 mkdir -p "$OUT"
 
@@ -41,18 +42,6 @@ fi
 # only 'lld invocation failed' when it is missing. The flake assembles that
 # layout at <toolchain>/rocm.
 export ROCM_PATH=${ROCM_PATH:-$TOOLCHAIN/rocm}
-
-# A program that takes an argument needs scaffolding that allocates its input in
-# GPU-accessible memory, so it gets a _gpu_scaffold.c of its own. A program that
-# takes none has nothing to allocate, and the CPU scaffolding works as-is.
-SCAFFOLD=$DEMO_DIR/${NAME}_gpu_scaffold.c
-if [ ! -e "$SCAFFOLD" ]; then
-    SCAFFOLD=$(dirname "$REMORA_FILE")/${NAME}_scaffold.c
-fi
-if [ ! -e "$SCAFFOLD" ]; then
-    echo "error: no scaffolding found for $REMORA_FILE" >&2
-    exit 1
-fi
 
 # The following is identical to remora2exe.
 remora futhark < "$REMORA_FILE" > "$OUT/$NAME.fut_soacs"
@@ -108,11 +97,44 @@ mlir-opt "$OUT/${NAME}_gpu.mlir" \
 
 mlir-translate --mlir-to-llvmir "$OUT/${NAME}_opt.mlir" -o "$OUT/$NAME.ll"
 
-# Beyond ../remora2exe's libraries, linking needs the GPU runtime and, for the
-# allocator hook, HIP itself.
-clang "$OUT/$NAME.ll" "$SCAFFOLD" "$DEMO_DIR/mlir_rocm_alloc.c" -Wall -Wextra \
-    -L"$MLIR_LIB" -Wl,-rpath,"$MLIR_LIB" \
-    -lmlir_rocm_runtime -lmlir_c_runner_utils -lamdhip64 -lm \
-    -o "$OUT/$NAME"
+# MLIR unloads the GPU module from a static destructor, which a library cannot
+# skip the way the old scaffolding did with _Exit. Drop it; the leaked module
+# costs nothing, since the process is ending anyway.
+sed -i '/@llvm\.global_dtors/d' "$OUT/$NAME.ll"
 
-echo "built $OUT/$NAME (kernels for $CHIP, tile $TILE)" >&2
+# Generate the C API from the entry signatures in $NAME.mlir.
+"$ROOT/remora-cbindings.janet" "$OUT/$NAME.mlir" "$OUT/$NAME.h" "$OUT/${NAME}_bindings.c"
+
+# The library: compiled program, its bindings, the shared runtime, and the
+# pinned allocator behind both MLIR's allocations and the caller's arrays.
+clang -c "$OUT/$NAME.ll" -o "$OUT/$NAME.o"
+for src in "$OUT/${NAME}_bindings.c" "$ROOT/runtime/remora_runtime.c" \
+           "$DEMO_DIR/mlir_rocm_alloc.c"; do
+    clang -c "$src" -Wall -Wextra -I"$OUT" -I"$ROOT/runtime" \
+        -o "$OUT/$(basename "${src%.c}").o"
+done
+
+rm -f "$OUT/lib$NAME.a"
+ar rcs "$OUT/lib$NAME.a" \
+    "$OUT/$NAME.o" "$OUT/${NAME}_bindings.o" "$OUT/remora_runtime.o" \
+    "$OUT/mlir_rocm_alloc.o"
+
+LINK_FLAGS="-L$MLIR_LIB -Wl,-rpath,$MLIR_LIB -lmlir_rocm_runtime"
+LINK_FLAGS="$LINK_FLAGS -lmlir_c_runner_utils -lamdhip64 -lm"
+
+echo "built $OUT/lib$NAME.a and $OUT/$NAME.h (kernels for $CHIP, tile $TILE)" >&2
+echo "link with: clang yourprogram.c $OUT/lib$NAME.a -I$OUT $LINK_FLAGS" >&2
+
+# Build the scaffolding too, if this program has any. Demo-specific scaffolding
+# wins; otherwise the one next to the .remora file, which is target-independent
+# and shared with ../remora2exe.
+SCAFFOLD=$DEMO_DIR/${NAME}_scaffold.c
+if [ ! -e "$SCAFFOLD" ]; then
+    SCAFFOLD=$(dirname "$REMORA_FILE")/${NAME}_scaffold.c
+fi
+if [ -e "$SCAFFOLD" ]; then
+    # shellcheck disable=SC2086
+    clang "$SCAFFOLD" "$OUT/lib$NAME.a" -Wall -Wextra -I"$OUT" $LINK_FLAGS \
+        -o "$OUT/$NAME"
+    echo "built $OUT/$NAME from $(basename "$SCAFFOLD")" >&2
+fi

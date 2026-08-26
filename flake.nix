@@ -159,6 +159,7 @@
             pkgs.llvmPackages_22.mlir
             pkgs.llvmPackages_22.llvm
             pkgs.llvmPackages_22.clang
+            pkgs.janet
           ];
 
           toolchain = pkgs.buildEnv {
@@ -222,5 +223,13 @@
             };
           };
         });
+
+      # So that `nix develop` gives the same thing as `nix shell`.
+      devShells = forAllSystems (system:
+        let pkgs = import nixpkgs { inherit system; };
+        in nixpkgs.lib.mapAttrs
+          (_: toolchain: pkgs.mkShell { packages = [ toolchain ]; })
+          (nixpkgs.lib.filterAttrs (name: _: name != "docker")
+            self.packages.${system}));
     };
 }

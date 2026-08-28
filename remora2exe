@@ -72,7 +72,7 @@ mlir-translate --mlir-to-llvmir "$OUT/${NAME}_opt.mlir" -o "$OUT/$NAME.ll"
 # The library: compiled program, its bindings, the shared runtime, and the
 # allocator behind the caller's arrays. No GPU pass here needs a static
 # destructor stripped, unlike the GPU drivers.
-clang -c "$OUT/$NAME.ll" -o "$OUT/$NAME.o"
+clang -c "$OUT/$NAME.ll" -o "$OUT/$NAME.o" -Wno-unused-command-line-argument
 for src in "$OUT/${NAME}_bindings.c" "$ROOT/runtime/remora_runtime.c" \
            "$ROOT/runtime/mlir_cpu_alloc.c"; do
     clang -c "$src" -Wall -Wextra -I"$OUT" -I"$ROOT/runtime" \

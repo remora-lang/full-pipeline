@@ -330,9 +330,17 @@
   (def entries (map entry-point (peg/match signatures (slurp mlir))))
   (when (empty? entries) (fail "no entry points found in %s" mlir))
 
-  # Every array type the entry points mention, in the order first seen.
-  (def arrays
-    (distinct (filter array-type? (mapcat |[;($ :args) ($ :ret)] entries))))
+  # Every array type the entry points mention, in the order first seen. Keyed
+  # by name rather than by value: the generated struct and its operations use
+  # only the element type and the rank, so two shapes of the same rank -- a
+  # tensor<32xf32> and a tensor<64xf32> -- share one remora_f32_1d.
+  (def arrays @[])
+  (def seen @{})
+  (each t (filter array-type? (mapcat |[;($ :args) ($ :ret)] entries))
+    (def name (array-name t))
+    (unless (seen name)
+      (put seen name true)
+      (array/push arrays t)))
 
   # Both files or neither: a half-written pair would confuse the next build.
   (def h (header (basename mlir) (guard-name header-file) arrays entries))

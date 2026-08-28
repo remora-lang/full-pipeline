@@ -21,6 +21,11 @@ jobs:
     - name: Build everything
       run: nix build
 
+    - name: Download data
+      run: |
+        curl https://sigkill.dk/junk/yolov4.weights -O
+        curl https://sigkill.dk/junk/input.bin -O
+
     - name: Run tests
       run: nix shell --command ./test.sh
 

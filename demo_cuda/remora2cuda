@@ -21,6 +21,9 @@ DEMO_DIR=$PWD
 OUT=$DEMO_DIR/build
 mkdir -p "$OUT"
 
+FUTHARK=futhark
+# FUTHARK=~/Projects/mocha/futhark/dist-newstyle/build/x86_64-linux/ghc-9.10.3/futhark-0.28.0/x/futhark/build/futhark/futhark
+
 NAME=$(basename "${REMORA_FILE%.remora}")
 
 TOOLCHAIN=$(dirname "$(command -v mlir-opt)")/..
@@ -56,7 +59,7 @@ fi
 # The following is identical to remora2exe.
 remora futhark < "$REMORA_FILE" > "$OUT/$NAME.fut_soacs"
 
-futhark dev -s --flatten=no_intra --no-grid -e "$OUT/$NAME.fut_soacs" \
+${FUTHARK} dev -s --flatten=no_intra --no-grid -e "$OUT/$NAME.fut_soacs" \
     > "$OUT/${NAME}_opt.fut_gpu"
 
 mlir-backend "$OUT/${NAME}_opt.fut_gpu" > "$OUT/$NAME.mlir"

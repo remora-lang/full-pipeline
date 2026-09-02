@@ -10,11 +10,13 @@ The following commands assume you are in the `demo_cuda` directory (the one
 containing this README).
 
 Note the `.#cuda` below: CUDA lives in a flake output of its own, so that the
-default environment is smaller.
+default environment is smaller. Also note that you need to set the
+environment variable CHIP according to your GPU -- replace XX in the
+following: 
 
 ```shell
 $ nix shell .#cuda
-$ ./remora2cuda ../examples/inc2.remora
+$ CHIP=sm_XX ./remora2cuda ../examples/inc2.remora
 built .../demo_cuda/build/libinc2.a and .../demo_cuda/build/inc2.h (kernels for sm_75, tile 256)
 link with: clang yourprogram.c .../libinc2.a -I... -L... -lmlir_cuda_runtime -lmlir_c_runner_utils -lcudart -lm
 built .../demo_cuda/build/inc2 from inc2_scaffold.c

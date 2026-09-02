@@ -71,6 +71,17 @@
             '';
           };
 
+          driverLibPath = pkgs.lib.concatStringsSep ":" [
+            "${pkgs.addDriverRunpath.driverLink}/lib"
+            "/usr/lib/wsl/lib"
+            "/usr/lib/x86_64-linux-gnu"
+            "/lib/x86_64-linux-gnu"
+            "/usr/lib/aarch64-linux-gnu/tegra"
+            "/usr/lib/aarch64-linux-gnu"
+            "/usr/lib64"
+            "/usr/lib"
+          ];
+
           # Same deal for NVIDIA: libmlir_cuda_runtime.so is missing too, so we
           # build that one file ourselves.  The wrappers use the CUDA driver
           # API, and libcuda comes from the installed driver rather than any
@@ -80,7 +91,7 @@
             pname = "mlir-cuda-runtime";
             inherit (pkgs.llvmPackages_22.mlir) version src;
 
-            nativeBuildInputs = [ pkgs.llvmPackages_22.clang ];
+            nativeBuildInputs = [ pkgs.llvmPackages_22.clang pkgs.patchelf ];
             buildInputs = [
               cudaPkgs.cudaPackages.cuda_cudart
               cudaPkgs.cudaPackages.cuda_nvcc
@@ -98,8 +109,8 @@
                 -Wno-return-type-c-linkage \
                 mlir/lib/ExecutionEngine/CudaRuntimeWrappers.cpp \
                 -L${cudaPkgs.cudaPackages.cuda_cudart}/lib/stubs -lcuda \
-                -Wl,-rpath,${pkgs.addDriverRunpath.driverLink}/lib \
                 -o libmlir_cuda_runtime.so
+              patchelf --add-rpath "${driverLibPath}" libmlir_cuda_runtime.so
               runHook postBuild
             '';
 

@@ -205,20 +205,23 @@
               pkgs.gnugrep
               pkgs.gnused
               pkgs.findutils
+              pkgs.curl
               pkgs.dockerTools.caCertificates
               pkgs.dockerTools.fakeNss
               pkgs.dockerTools.usrBinEnv
             ];
             extraCommands = ''
-              mkdir -p tmp
+              mkdir -p tmp root
               chmod 1777 tmp
+              cp -r ${self} remora
+              chmod -R u+w remora
             '';
             config = {
               Env = [
                 "PATH=/bin"
                 "HOME=/root"
               ];
-              WorkingDir = "/root";
+              WorkingDir = "/remora";
               Cmd = [ "${pkgs.bashInteractive}/bin/bash" ];
             };
           };

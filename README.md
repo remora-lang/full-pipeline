@@ -6,9 +6,8 @@ Programming on Heterogeneous Architectures via E-Graphs for LLVM*). The project
 contains various components with exotic dependencies, which may occasionally be
 incompatible with each other. This repository uses [Nix
 Flakes](https://determinate.systems/blog/nix-flakes-explained/) to pull together
-known-compatible components in a reproducible way. Eventually, we will also use
-this setup to produce Docker images that can be used without having to interact
-with Nix.
+known-compatible components in a reproducible way. The same setup also produces
+a Docker image.
 
 ## Usage
 
@@ -44,6 +43,26 @@ if (remora_entry_main(ctx, &out) != 0) {
 
 `../demo_cuda` and `../demo_rocm` produce the same interface for GPU targets,
 so scaffolding can be moved between them unchanged.
+
+## Docker
+
+The toolchain is also published as a Docker image:
+
+```shell
+$ docker run -it ghcr.io/remora-lang/remora-toolchain
+```
+
+That drops you into a shell in `/remora`, which holds a copy of this
+repository, so `./remora2exe examples/basic0.remora` and `./test.sh` work there
+just as they do above.
+
+CI builds and pushes the image on every push to `main`. To build it yourself
+instead:
+
+```shell
+$ nix build .#docker
+$ docker load < result
+```
 
 ## Example programs
 

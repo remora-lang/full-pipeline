@@ -47,7 +47,7 @@ jobs:
       run: docker load < result
 
     - name: Run tests in Docker image
-      run: docker run --rm -v "$PWD":/workspace -w /workspace remora-toolchain:latest ./test.sh
+      run: docker run --rm remora-toolchain:latest ./test.sh
 
     - name: Log in to GitHub Container Registry
       if: github.event_name == 'push'

@@ -18,13 +18,18 @@ following:
 $ nix shell .#cuda
 $ CHIP=sm_XX ./remora2cuda ../examples/inc2.remora
 built .../demo_cuda/build/libinc2.a and .../demo_cuda/build/inc2.h (kernels for sm_75, tile 256)
-link with: clang yourprogram.c .../libinc2.a -I... -L... -lmlir_cuda_runtime -lmlir_c_runner_utils -lcudart -lm
+link with: clang yourprogram.c .../libinc2.a -I... -L... -lmlir_cuda_runtime -lmlir_c_runner_utils -lcudart -lm -L.../stubs -lcuda -Wl,-rpath,...
 built .../demo_cuda/build/inc2 from inc2_scaffold.c
 $ ./build/inc2
 [2, 3, 4, ..., 1024, 1025]
 ```
 
 `CHIP` (default `sm_75`) and `TILE` (default `256`) are environment variables.
+
+The `-lcuda` at the end of the link line is the CUDA driver library, which
+`libmlir_cuda_runtime.so` uses. `remora2cuda` tries to find it for you via
+`pkg-config`, but things are easiest if you make sure it's in your global linker
+path.
 
 The important property is that nothing about the kernel is written by hand. Its
 name, launch geometry, and argument layout are all emitted by the compiler, so

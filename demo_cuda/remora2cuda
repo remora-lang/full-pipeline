@@ -119,8 +119,13 @@ ar rcs "$OUT/lib$NAME.a" \
     "$OUT/$NAME.o" "$OUT/${NAME}_bindings.o" "$OUT/remora_runtime.o" \
     "$OUT/mlir_cuda_alloc.o"
 
+# libmlir_cuda_runtime.so calls the CUDA driver API, we also have to link
+# libcuda. On NixOS this requires some fiddling - see flake.nix.
+export PKG_CONFIG_PATH="$TOOLCHAIN/share/pkgconfig:$TOOLCHAIN/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+CUDA_LIBS=$(pkg-config --libs cuda 2>/dev/null) || CUDA_LIBS="-lcuda"
+
 LINK_FLAGS="-L$MLIR_LIB -Wl,-rpath,$MLIR_LIB -lmlir_cuda_runtime"
-LINK_FLAGS="$LINK_FLAGS -lmlir_c_runner_utils -lcudart -lm"
+LINK_FLAGS="$LINK_FLAGS -lmlir_c_runner_utils -lcudart -lm $CUDA_LIBS"
 
 echo "built $OUT/lib$NAME.a and $OUT/$NAME.h (kernels for $CHIP, tile $TILE)" >&2
 echo "link with: clang yourprogram.c $OUT/lib$NAME.a -I$OUT $LINK_FLAGS" >&2

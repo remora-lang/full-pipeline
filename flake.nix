@@ -147,8 +147,22 @@
           # $CUDA_ROOT/nvvm/libdevice, even for a kernel with no math in it.
           # It lands at <toolchain>/cuda, where remora2cuda points CUDA_ROOT.
           # libcudart comes along so scaffolding can just say -lcudart.
+          #
+          # libcuda is a different matter: it belongs to the installed driver,
+          # so no package can provide the real one.  cuda_cudart ships a
+          # link-time stub for it, but in a directory of its own that nothing
+          # puts on the search path, which is why a bare -lcuda does not
+          # resolve.  We hand remora2cuda that directory through pkg-config,
+          # since a .pc file can carry the rpath along with the -L.
+          #
+          # cuda_cudart has a cuda.pc of its own, but it rpaths only
+          # /run/opengl-driver/lib, which exists on NixOS and nowhere else. On
+          # any other distribution the executable would then find nothing but
+          # the stub it linked against, which would fail at runtime. So we write
+          # our own cuda.pc, naming the same directories mlir-cuda-runtime above
+          # was patched with.
           cuda-toolkit = pkgs.runCommand "cuda-toolkit-layout" { } ''
-            mkdir -p $out/cuda/bin $out/cuda/nvvm $out/lib
+            mkdir -p $out/cuda/bin $out/cuda/nvvm $out/lib $out/share/pkgconfig
             ln -s ${cudaPkgs.cudaPackages.cuda_nvcc}/bin/ptxas \
               $out/cuda/bin/ptxas
             ln -s ${cudaPkgs.cudaPackages.cuda_nvcc}/bin/fatbinary \
@@ -156,6 +170,17 @@
             ln -s ${cudaPkgs.cudaPackages.cuda_nvcc}/nvvm/libdevice \
               $out/cuda/nvvm/libdevice
             ln -s ${cudaPkgs.cudaPackages.cuda_cudart}/lib/libcudart.so* $out/lib/
+
+            cat > $out/share/pkgconfig/cuda.pc <<'EOF'
+            libdir=${cudaPkgs.cudaPackages.cuda_cudart}/lib/stubs
+            includedir=${cudaPkgs.cudaPackages.cuda_cudart}/include
+
+            Name: cuda
+            Description: CUDA Driver Library
+            Version: ${cudaPkgs.cudaPackages.cuda_cudart.version}
+            Libs: -L''${libdir} -lcuda -Wl,-rpath,${driverLibPath}
+            Cflags: -I''${includedir}
+            EOF
           '';
 
           # ROCm is only packaged for x86_64-linux in nixpkgs.
@@ -196,6 +221,7 @@
             paths = basePaths ++ [
               mlir-cuda-runtime
               cuda-toolkit
+              pkgs.pkg-config
             ];
           };
         in {

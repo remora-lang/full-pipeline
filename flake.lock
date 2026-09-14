@@ -6,7 +6,6 @@
       },
       "locked": {
         "lastModified": 1789229500,
-        "narHash": "sha256-h9Kd/sB5iUNyI2qAO6bFDg3CzqFAtrQYqldrwKXa7jg=",
         "owner": "diku-dk",
         "repo": "futhark",
         "rev": "c3b8e3b9e109fc11e22dcf31c26a0eb3a2257931",
@@ -27,7 +26,6 @@
       },
       "locked": {
         "lastModified": 1789229500,
-        "narHash": "sha256-h9Kd/sB5iUNyI2qAO6bFDg3CzqFAtrQYqldrwKXa7jg=",
         "owner": "diku-dk",
         "repo": "futhark",
         "rev": "c3b8e3b9e109fc11e22dcf31c26a0eb3a2257931",
@@ -64,7 +62,6 @@
       },
       "locked": {
         "lastModified": 1787598743,
-        "narHash": "sha256-9ju7j8JRJCOc0bIcZPW38cft3Bi6AI6wwqxvpgIwgD0=",
         "owner": "remora-lang",
         "repo": "mlir-backend",
         "rev": "bbbf04adbbb407a0e203af6a23b1a1f852ddb4e0",
@@ -79,7 +76,6 @@
     "nixpkgs": {
       "locked": {
         "lastModified": 1777578337,
-        "narHash": "sha256-Ad49moKWeXtKBJNy2ebiTQUEgdLyvGmTeykAQ9xM+Z4=",
         "owner": "NixOS",
         "repo": "nixpkgs",
         "rev": "15f4ee454b1dce334612fa6843b3e05cf546efab",
@@ -95,7 +91,6 @@
     "nixpkgs_2": {
       "locked": {
         "lastModified": 1782723713,
-        "narHash": "sha256-oPXCU/SSUokcGaJREHibG1CBX3+s/W7orDWQOZDsEeQ=",
         "owner": "NixOS",
         "repo": "nixpkgs",
         "rev": "b5aa0fbd538984f6e3d201be0005b4463d8b09f8",
@@ -145,7 +140,6 @@
       },
       "locked": {
         "lastModified": 1789414494,
-        "narHash": "sha256-OyU5ScAL7C0sTl0qVlYyr7KwTtQLQtQjENUXRFcL8f4=",
         "owner": "remora-lang",
         "repo": "remora",
         "rev": "7010c40b1eba7c7f375cd0d493238d2107c385da",

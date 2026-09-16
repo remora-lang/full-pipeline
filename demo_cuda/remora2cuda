@@ -10,7 +10,9 @@ if [ $# -ne 1 ]; then
     exit 1
 fi
 
+echo "remora: $(which remora)"
 echo "futhark: $(which futhark)"
+echo "mlir-backend: $(which mlir-backend)"
 
 # Resolved before the cd below, so relative paths still mean what the caller
 # meant.

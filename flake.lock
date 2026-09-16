@@ -44,10 +44,10 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1787598743,
+        "lastModified": 1789595282,
         "owner": "remora-lang",
         "repo": "mlir-backend",
-        "rev": "bbbf04adbbb407a0e203af6a23b1a1f852ddb4e0",
+        "rev": "a929eb3a2fb12edaa60233e4995a9a05407934ea",
         "type": "github"
       },
       "original": {

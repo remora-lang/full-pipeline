@@ -10,6 +10,8 @@ if [ $# -ne 1 ]; then
     exit 1
 fi
 
+echo "futhark: $(which futhark)"
+
 # Resolved before the cd below, so that a path relative to the caller's working
 # directory keeps meaning what they meant.
 REMORA_FILE=$(realpath "$1")

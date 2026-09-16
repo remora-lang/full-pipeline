@@ -16,6 +16,8 @@ if [ $# -ne 1 ]; then
     exit 1
 fi
 
+echo "futhark: $(which futhark)"
+
 # Resolved before the cd below, so relative paths still mean what the caller
 # meant.
 REMORA_FILE=$(realpath "$1")

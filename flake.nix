@@ -6,10 +6,9 @@
 
     remora.url = "github:remora-lang/remora";
     mlir-backend.url = "github:remora-lang/mlir-backend";
-    futhark.url = "github:diku-dk/futhark";
   };
 
-  outputs = { self, nixpkgs, remora, mlir-backend, futhark, ... }:
+  outputs = { self, nixpkgs, remora, mlir-backend, ... }:
     let
       systems = [
         "x86_64-linux"
@@ -191,7 +190,7 @@
           basePaths = [
             remora.packages.${system}.default
             mlir-backend.packages.${system}.default
-            futhark.packages.${system}.default
+            remora.packages.${system}.futhark
             pkgs.llvmPackages_22.mlir
             pkgs.llvmPackages_22.llvm
             pkgs.llvmPackages_22.clang

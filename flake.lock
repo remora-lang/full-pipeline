@@ -8,10 +8,10 @@
         ]
       },
       "locked": {
-        "lastModified": 1789229500,
+        "lastModified": 1792521629,
         "owner": "diku-dk",
         "repo": "futhark",
-        "rev": "c3b8e3b9e109fc11e22dcf31c26a0eb3a2257931",
+        "rev": "16c6e619d1cc1a0fc2497a3da4573a89209ae0b9",
         "type": "github"
       },
       "original": {
@@ -44,10 +44,10 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1789595282,
+        "lastModified": 1792528113,
         "owner": "remora-lang",
         "repo": "mlir-backend",
-        "rev": "a929eb3a2fb12edaa60233e4995a9a05407934ea",
+        "rev": "2fe88f43d618db0a98cbb53e8003afa4b8d58774",
         "type": "github"
       },
       "original": {
@@ -107,10 +107,10 @@
         "nixpkgs": "nixpkgs_3"
       },
       "locked": {
-        "lastModified": 1789582749,
+        "lastModified": 1792529017,
         "owner": "remora-lang",
         "repo": "remora",
-        "rev": "e61bce9d5459bced985e14805fcecb7928a8e1b9",
+        "rev": "7f99a645118e58914bb788679ab6226e08167f41",
         "type": "github"
       },
       "original": {
